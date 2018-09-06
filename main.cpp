@@ -1,16 +1,22 @@
 #define SDL_MAIN_HANDLED
 
 #define FMT_HEADER_ONLY
+#include "HitableList.h"
 #include "JobManager.h"
+#include "camera.h"
 #include "fmt/printf.h"
 #include "ray.h"
+#include "sphere.h"
 #include "vector.h"
+
 #include <chrono>
+#include <limits>
+#include <random>
 #include <SDL2/SDL.h>
 
 const int SCREEN_WIDTH  = 800;
-const int SCREEN_HEIGHT = 600;
-const int TILE_SIZE     = 32;
+const int SCREEN_HEIGHT = 400;
+const int SAMPLES       = 8;
 
 using namespace math;
 
@@ -73,16 +79,6 @@ SDL_Color GetPixel(SDL_Surface* surface, Uint32 x, Uint32 y)
     return color;
 }
 
-bool HitSphere(const Vector3f& center, float radius, const Rayf& r)
-{
-    Vector3f oc           = r.origin() - center;
-    float    a            = dot(r.direction(), r.direction());
-    float    b            = 2.f * dot(oc, r.direction());
-    float    c            = dot(oc, oc) - radius * radius;
-    float    discriminant = b * b - 4 * a * c;
-    return discriminant > 0;
-}
-
 int main(int argc, char** argv)
 {
     SDL_Window*  window  = nullptr;
@@ -111,14 +107,17 @@ int main(int argc, char** argv)
     using namespace std::chrono;
     high_resolution_clock::time_point lastTime = high_resolution_clock::now();
 
+    std::mt19937                          rng;
+    std::uniform_real_distribution<float> unif;
+
     bool running = true;
     // Event handler
-    SDL_Event e;
-    Uint32    y = 0;
-    Vector3f  lowerLeft(-2.f, -1.f, -1.f);
-    Vector3f  horizontal(4.f, 0.f, 0.f);
-    Vector3f  vertical(0.f, 2.f, 0.f);
-    Vector3f  origin(0.f, 0.f, 0.f);
+    SDL_Event   e;
+    Uint32      y = 0;
+    Camera      cam;
+    HitableList world;
+    world.list.push_back(new Sphere(Vector3f(0.f, 0.f, -1.f), 0.5f));
+    world.list.push_back(new Sphere(Vector3f(0.f, -100.5f, -1.f), 100.f));
 
     while (running)
     {
@@ -154,23 +153,29 @@ int main(int argc, char** argv)
             {
                 float u = float(x) / SCREEN_WIDTH;
                 float v = float(SCREEN_HEIGHT - y - 1) / SCREEN_HEIGHT;
-                Rayf  r(origin, lowerLeft + u * horizontal + v * vertical);
 
-                auto color = [=](void*, size_t) {
+                auto color = [=, &cam, &rng, &unif](void*, size_t) {
                     Vector3f colorVec;
-                    if (HitSphere(Vector3f(0.f, 0.f, -1.f), 0.5, r))
+                    HitData  hitData;
+                    for (int i = 0; i < SAMPLES; ++i)
                     {
-                        colorVec = Vector3f(1.f, 0.f, 0.f);
+                        Rayf r = cam.getRay(u + unif(rng) / SCREEN_WIDTH, v + unif(rng) / SCREEN_HEIGHT);
+                        if (world.hit(r, 0.f, std::numeric_limits<float>::max(), hitData))
+                        {
+                            const Vector3f& N = hitData.normal;
+                            colorVec += 0.5f * Vector3f(N.x + 1.f, N.y + 1.f, N.z + 1.f);
+                        }
+                        else
+                        {
+                            float t = 0.5f * (r.direction().y + 1.f);
+                            colorVec += (1.f - t) * Vector3f(1.f, 1.f, 1.f) + t * Vector3f(.3f, .5f, 1.f);
+                        }
                     }
-                    else
-                    {
-                        float t  = 0.5f * (r.direction().y + 1.f);
-                        colorVec = (1.f - t) * Vector3f(1.f, 1.f, 1.f) + t * Vector3f(.3f, .5f, 1.f);
-                    }
+
                     SDL_Color color;
-                    color.r = 255.99f * colorVec.r;
-                    color.g = 255.99f * colorVec.g;
-                    color.b = 255.99f * colorVec.b;
+                    color.r = 255.99f * (colorVec.r / SAMPLES);
+                    color.g = 255.99f * (colorVec.g / SAMPLES);
+                    color.b = 255.99f * (colorVec.b / SAMPLES);
                     color.a = 255;
                     SetPixel(surface, x, y, color);
                 };
@@ -182,7 +187,7 @@ int main(int argc, char** argv)
             jobMgr.wait();
         }
 
-        if (elapsedTime.count() > 1.0)
+        if (elapsedTime.count() > 0.016)
         {
             lastTime = nowTime;
             // Update the surface every second
@@ -191,6 +196,12 @@ int main(int argc, char** argv)
     }
 
     jobMgr.release();
+
+    for (auto* hitable : world.list)
+    {
+        delete hitable;
+    }
+
     SDL_DestroyWindow(window);
 
     SDL_Quit();

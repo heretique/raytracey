@@ -3,8 +3,12 @@ cmake_minimum_required(VERSION 3.5)
 add_executable(raytracey "")
 
 target_sources(raytracey PRIVATE main.cpp
+    camera.h
     vector.h
     ray.h
+    hitable.h
+    sphere.h
+    HitableList.h
     JobManager.cpp
     JobManager.h)
 

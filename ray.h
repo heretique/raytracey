@@ -39,7 +39,7 @@ public:
         _direction = direction;
     }
 
-    VectorType pointOnRay(float distance)
+    VectorType pointOnRay(float distance) const
     {
         return _origin + distance * _direction;
     }

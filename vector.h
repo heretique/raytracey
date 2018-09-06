@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cmath>
 #include <initializer_list>
 
 namespace util
@@ -339,7 +340,7 @@ Vector<T, Dimension> pow(Vector<T, Dimension> a, float p)
 {
     Vector<T, Dimension> result;
     for (size_t i = 0; i < Dimension; ++i)
-        result[i] = ::pow(a[i], p);
+        result[i] = std::pow(a[i], p);
     return result;
 }
 
