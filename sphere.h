@@ -8,9 +8,10 @@ public:
     Sphere()
     {
     }
-    Sphere(math::Vector3f center, float radius)
+    Sphere(math::Vector3f center, float radius, std::unique_ptr<Material> material)
         : center(center)
         , radius(radius)
+        , material(std::move(material))
     {
     }
     bool hit(const math::Rayf& r, float tMin, float tMax, HitData& hitData) const override
@@ -23,7 +24,8 @@ public:
         float    discriminant = b * b - a * c;
         if (discriminant > 0.f)
         {
-            float temp = (-b - sqrt(b * b - a * c)) / a;
+            hitData.materialPtr = material.get();
+            float temp          = (-b - sqrt(b * b - a * c)) / a;
             if (temp < tMax && temp > tMin)
             {
                 hitData.t      = temp;
@@ -44,6 +46,7 @@ public:
         return false;
     }
 
-    math::Vector3f center;
-    float          radius;
+    math::Vector3f            center;
+    float                     radius;
+    std::unique_ptr<Material> material;
 };

@@ -5,8 +5,10 @@
 #include "JobManager.h"
 #include "camera.h"
 #include "fmt/printf.h"
+#include "material.h"
 #include "ray.h"
 #include "sphere.h"
+#include "utils.h"
 #include "vector.h"
 
 #include <chrono>
@@ -16,7 +18,7 @@
 
 const int SCREEN_WIDTH  = 800;
 const int SCREEN_HEIGHT = 400;
-const int SAMPLES       = 8;
+const int SAMPLES       = 20;
 
 using namespace math;
 
@@ -108,7 +110,7 @@ int main(int argc, char** argv)
     high_resolution_clock::time_point lastTime = high_resolution_clock::now();
 
     std::mt19937                          rng;
-    std::uniform_real_distribution<float> unif;
+    std::uniform_real_distribution<float> distribution;
 
     bool running = true;
     // Event handler
@@ -116,9 +118,14 @@ int main(int argc, char** argv)
     Uint32      y = 0;
     Camera      cam;
     HitableList world;
-    world.list.push_back(new Sphere(Vector3f(0.f, 0.f, -1.f), 0.5f));
-    world.list.push_back(new Sphere(Vector3f(0.f, -100.5f, -1.f), 100.f));
-
+    world.list.push_back(
+        new Sphere(Vector3f(0.f, 0.f, -1.f), 0.5f, std::make_unique<Lambertian>(math::Vector3f(.8f, .3f, .3f))));
+    world.list.push_back(
+        new Sphere(Vector3f(0.f, -100.5f, -1.f), 100.f, std::make_unique<Lambertian>(math::Vector3f(.8f, .8f, .3f))));
+    world.list.push_back(
+        new Sphere(Vector3f(1.f, 0.f, -1.f), 0.5f, std::make_unique<Metal>(math::Vector3f(.8f, .6f, .2f), 0.3f)));
+    world.list.push_back(new Sphere(Vector3f(-1.f, 0.f, -1.f), 0.5f, std::make_unique<Dielectric>(1.5f)));
+    world.list.push_back(new Sphere(Vector3f(-1.f, 0.f, -1.f), -0.45f, std::make_unique<Dielectric>(1.5f)));
     while (running)
     {
         // Handle events on queue
@@ -151,31 +158,48 @@ int main(int argc, char** argv)
         {
             for (int x = 0; x < SCREEN_WIDTH; ++x)
             {
-                float u = float(x) / SCREEN_WIDTH;
-                float v = float(SCREEN_HEIGHT - y - 1) / SCREEN_HEIGHT;
-
-                auto color = [=, &cam, &rng, &unif](void*, size_t) {
+                // main processing job (captures stuff)
+                auto color = [=, &cam, &world](void*, size_t) {
                     Vector3f colorVec;
-                    HitData  hitData;
                     for (int i = 0; i < SAMPLES; ++i)
                     {
-                        Rayf r = cam.getRay(u + unif(rng) / SCREEN_WIDTH, v + unif(rng) / SCREEN_HEIGHT);
-                        if (world.hit(r, 0.f, std::numeric_limits<float>::max(), hitData))
-                        {
-                            const Vector3f& N = hitData.normal;
-                            colorVec += 0.5f * Vector3f(N.x + 1.f, N.y + 1.f, N.z + 1.f);
-                        }
-                        else
-                        {
-                            float t = 0.5f * (r.direction().y + 1.f);
-                            colorVec += (1.f - t) * Vector3f(1.f, 1.f, 1.f) + t * Vector3f(.3f, .5f, 1.f);
-                        }
+                        float u = (float(x) + rand01()) / SCREEN_WIDTH;
+                        float v = (float(SCREEN_HEIGHT - y - 1) + rand01()) / SCREEN_HEIGHT;
+                        Rayf  r = cam.getRay(u, v);
+
+                        auto colorImpl = [](const Rayf& r, const HitableList& world, int depth,
+                                            auto& colorRef) -> Vector3f {
+                            Vector3f colorVec;
+                            HitData  hitData;
+                            if (world.hit(r, 0.001f, std::numeric_limits<float>::max(), hitData))
+                            {
+                                math::Rayf     scattered;
+                                math::Vector3f attenuation;
+                                if (depth < 20 && hitData.materialPtr->scatter(r, hitData, attenuation, scattered))
+                                {
+                                    return attenuation * colorRef(scattered, world, depth + 1, colorRef);
+                                }
+                                else
+                                {
+                                    return math::Vector3f(0.f, 0.f, 0.f);
+                                }
+                            }
+                            else
+                            {
+                                float t  = 0.5f * (r.direction().y + 1.f);
+                                colorVec = (1.f - t) * Vector3f(1.f, 1.f, 1.f) + t * Vector3f(.3f, .5f, 1.f);
+                            }
+
+                            return colorVec;
+                        };
+
+                        colorVec += colorImpl(r, world, 0, colorImpl);
                     }
 
                     SDL_Color color;
-                    color.r = 255.99f * (colorVec.r / SAMPLES);
-                    color.g = 255.99f * (colorVec.g / SAMPLES);
-                    color.b = 255.99f * (colorVec.b / SAMPLES);
+                    color.r = 255.99f * (std::sqrt(colorVec.r / SAMPLES));
+                    color.g = 255.99f * (std::sqrt(colorVec.g / SAMPLES));
+                    color.b = 255.99f * (std::sqrt(colorVec.b / SAMPLES));
                     color.a = 255;
                     SetPixel(surface, x, y, color);
                 };

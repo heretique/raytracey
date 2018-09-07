@@ -9,8 +9,11 @@ target_sources(raytracey PRIVATE main.cpp
     hitable.h
     sphere.h
     HitableList.h
+    material.h
     JobManager.cpp
-    JobManager.h)
+    JobManager.h
+    utils.h
+    utils.cpp)
 
 find_package(SDL2 REQUIRED)
 

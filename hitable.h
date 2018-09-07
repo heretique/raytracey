@@ -2,11 +2,14 @@
 
 #include "ray.h"
 
+class Material;
+
 struct HitData
 {
     float          t;
     math::Vector3f p;
     math::Vector3f normal;
+    Material*      materialPtr;
 };
 
 class Hitable
