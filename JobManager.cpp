@@ -20,15 +20,18 @@ void JobManager::init()
             Job job;
             while (_running.test_and_set(std::memory_order_acquire) == true)
             {
-                if (!_jobQueue.try_dequeue(job))
                 {
-                    continue;
+                    std::unique_lock<std::mutex> lg(_hasJobsMutex);
+                    _hasJobsCondition.wait(lg, [&] { return _hasJobs == true; });
                 }
 
-                job.func(job.data, job.count);
+                while (_jobQueue.try_dequeue(job))
+                {
+                    job.func(job.data, job.count);
 
-                if (job.pending)
-                    _pendingTasks.fetch_add(-1, std::memory_order_release);
+                    if (job.pending)
+                        _pendingTasks.fetch_add(-1, std::memory_order_release);
+                }
             }
             fmt::print("Exiting worker thread...\n");
             _running.clear();
@@ -39,6 +42,15 @@ void JobManager::init()
 void JobManager::release()
 {
     _running.clear();
+
+    // fake work to send notification
+    {
+        std::lock_guard<std::mutex> lg(_hasJobsMutex);
+        _hasJobs = true;
+    }
+
+    _hasJobsCondition.notify_all();
+
     for (auto& thread : _runners)
         thread.join();
 }
@@ -62,6 +74,13 @@ void JobManager::addSignalingJob(JobFunc func, void* data, size_t count, JobDone
 
 void JobManager::wait()
 {
+    {
+        std::lock_guard<std::mutex> lg(_hasJobsMutex);
+        _hasJobs = true;
+    }
+
+    _hasJobsCondition.notify_all();
+
     Job job;
     while (_pendingTasks.load(std::memory_order_acquire) != 0)
     {
@@ -73,5 +92,10 @@ void JobManager::wait()
         job.func(job.data, job.count);
 
         _pendingTasks.fetch_add(-1, std::memory_order_release);
+    }
+
+    {
+        std::lock_guard<std::mutex> lg(_hasJobsMutex);
+        _hasJobs = false;
     }
 }

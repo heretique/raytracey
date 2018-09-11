@@ -39,3 +39,13 @@ bool refract(const math::Vector3f& v, const math::Vector3f& n, float niOverNt, m
     else
         return false;
 }
+
+math::Vector3f RandomInUnitDisk()
+{
+    math::Vector3f p;
+    do
+    {
+        p = 2.f * math::Vector3f(gDistribution(gRng), gDistribution(gRng), 0.f) - math::Vector3f(1.f, 1.f, 0.f);
+    } while (math::dot(p, p) >= 1.f);
+    return p;
+}

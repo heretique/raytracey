@@ -72,6 +72,9 @@ private:
     size_t                   _cpuCount{0};
     std::atomic<size_t>      _pendingTasks{0};
     std::atomic_flag         _running;
+    std::mutex               _hasJobsMutex;
+    bool                     _hasJobs{false};
+    std::condition_variable  _hasJobsCondition;
 };
 
 template <typename DataType, typename SplitterType>

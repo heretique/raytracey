@@ -18,7 +18,7 @@
 
 const int SCREEN_WIDTH  = 800;
 const int SCREEN_HEIGHT = 400;
-const int SAMPLES       = 20;
+const int SAMPLES       = 200;
 
 using namespace math;
 
@@ -114,9 +114,14 @@ int main(int argc, char** argv)
 
     bool running = true;
     // Event handler
-    SDL_Event   e;
-    Uint32      y = 0;
-    Camera      cam;
+    SDL_Event e;
+    Uint32    y = 0;
+    Vector3f  eye(3.f, 3.f, 2.f);
+    Vector3f  lookAt(0.f, 0.f, -1.f);
+    float     focusDist = length(eye - lookAt);
+    float     aperture  = .2f;
+    Camera    cam(eye, lookAt, Vector3f(0.f, 1.f, 0.f), 45, float(SCREEN_WIDTH) / float(SCREEN_HEIGHT), aperture,
+               focusDist);
     HitableList world;
     world.list.push_back(
         new Sphere(Vector3f(0.f, 0.f, -1.f), 0.5f, std::make_unique<Lambertian>(math::Vector3f(.8f, .3f, .3f))));
