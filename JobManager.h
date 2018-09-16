@@ -2,12 +2,13 @@
 
 #include "concurrentqueue.h"
 #include <functional>
+#include <mutex>
 #include <vector>
 
 class Job;
 
 typedef std::function<void(void*, size_t)> JobFunc;
-typedef std::function<void()> JobDoneFunc;
+typedef std::function<void()>              JobDoneFunc;
 
 struct Job
 {
@@ -21,9 +22,7 @@ template <typename DataType, size_t Size>
 class CountSplitter
 {
 public:
-    CountSplitter()
-    {
-    }
+    CountSplitter() {}
 
     static bool split(size_t count)
     {
@@ -35,9 +34,7 @@ template <typename DataType, size_t Size>
 class DataSizeSplitter
 {
 public:
-    DataSizeSplitter()
-    {
-    }
+    DataSizeSplitter() {}
 
     static bool split(size_t count)
     {
@@ -68,10 +65,13 @@ public:
 
 private:
     moodycamel::ConcurrentQueue<Job, ConcurrentQueueTraits> _jobQueue;
-    std::vector<std::thread> _runners;
-    size_t                   _cpuCount{0};
-    std::atomic<size_t>      _pendingTasks{0};
-    std::atomic_flag         _running;
+    std::vector<std::thread>                                _runners;
+    size_t                                                  _cpuCount{0};
+    std::atomic<size_t>                                     _pendingTasks{0};
+    std::atomic_flag                                        _running;
+    std::mutex                                              _hasJobsMutex;
+    bool                                                    _hasJobs{false};
+    std::condition_variable                                 _hasJobsCondition;
 };
 
 template <typename DataType, typename SplitterType>

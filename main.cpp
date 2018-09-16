@@ -18,7 +18,7 @@
 
 const int SCREEN_WIDTH  = 800;
 const int SCREEN_HEIGHT = 400;
-const int SAMPLES       = 20;
+const int SAMPLES       = 200;
 
 using namespace math;
 
@@ -81,6 +81,44 @@ SDL_Color GetPixel(SDL_Surface* surface, Uint32 x, Uint32 y)
     return color;
 }
 
+void createRandomScene(HitableList& world)
+{
+    int n = 500;
+    world.list.push_back(
+        new Sphere(Vector3f(0.f, -1000.f, 0.f), 1000.f, std::make_unique<Lambertian>(math::Vector3f(.5f, .5f, .5f))));
+    for (int a = -11; a < 11; ++a)
+        for (int b = -11; b < 11; ++b)
+        {
+            float    chooseMat = rand01();
+            Vector3f center(a + 0.9f * rand01(), 0.2f, b + 0.9f * rand01());
+            if (length(center - Vector3f(4.f, .2f, 0.f)) > 0.9f)
+            {
+                if (chooseMat < .8f)
+                {
+                    world.list.push_back(
+                        new Sphere(center, .2f, std::make_unique<Lambertian>(Vector3f(
+                                                    rand01() * rand01(), rand01() * rand01(), rand01() * rand01()))));
+                }
+                else if (chooseMat < .95f)
+                {
+                    world.list.push_back(new Sphere(
+                        center, .2f, std::make_unique<Metal>(
+                                         Vector3f(.5f * (1 + rand01()), .5f * (1 + rand01()), .5f * (1 + rand01())))));
+                }
+                else
+                {
+                    world.list.push_back(new Sphere(center, .2f, std::make_unique<Dielectric>(1.5f)));
+                }
+            }
+        }
+
+    world.list.push_back(new Sphere(Vector3f(0.f, 1.f, 0.f), 1.f, std::make_unique<Dielectric>(1.5f)));
+    world.list.push_back(
+        new Sphere(Vector3f(-4.f, 1.f, 0.f), 1.f, std::make_unique<Lambertian>(math::Vector3f(.4f, .2f, .1f))));
+    world.list.push_back(
+        new Sphere(Vector3f(4.f, 1.f, 0.f), 1.f, std::make_unique<Metal>(math::Vector3f(.7f, .6f, .5f), 0.f)));
+}
+
 int main(int argc, char** argv)
 {
     SDL_Window*  window  = nullptr;
@@ -114,18 +152,25 @@ int main(int argc, char** argv)
 
     bool running = true;
     // Event handler
-    SDL_Event   e;
-    Uint32      y = 0;
-    Camera      cam;
+    SDL_Event e;
+    Uint32    y = 0;
+    Vector3f  eye(3.f, 3.f, 2.f);
+    Vector3f  lookAt(0.f, 0.f, -1.f);
+    float     focusDist = length(eye - lookAt);
+    float     aperture  = .2f;
+    Camera    cam(eye, lookAt, Vector3f(0.f, 1.f, 0.f), 45, float(SCREEN_WIDTH) / float(SCREEN_HEIGHT), aperture,
+               focusDist);
     HitableList world;
-    world.list.push_back(
-        new Sphere(Vector3f(0.f, 0.f, -1.f), 0.5f, std::make_unique<Lambertian>(math::Vector3f(.8f, .3f, .3f))));
-    world.list.push_back(
-        new Sphere(Vector3f(0.f, -100.5f, -1.f), 100.f, std::make_unique<Lambertian>(math::Vector3f(.8f, .8f, .3f))));
-    world.list.push_back(
-        new Sphere(Vector3f(1.f, 0.f, -1.f), 0.5f, std::make_unique<Metal>(math::Vector3f(.8f, .6f, .2f), 0.3f)));
-    world.list.push_back(new Sphere(Vector3f(-1.f, 0.f, -1.f), 0.5f, std::make_unique<Dielectric>(1.5f)));
-    world.list.push_back(new Sphere(Vector3f(-1.f, 0.f, -1.f), -0.45f, std::make_unique<Dielectric>(1.5f)));
+    //    world.list.push_back(
+    //        new Sphere(Vector3f(0.f, 0.f, -1.f), 0.5f, std::make_unique<Lambertian>(math::Vector3f(.8f, .3f, .3f))));
+    //    world.list.push_back(
+    //        new Sphere(Vector3f(0.f, -100.5f, -1.f), 100.f, std::make_unique<Lambertian>(math::Vector3f(.8f, .8f,
+    //        .3f))));
+    //    world.list.push_back(
+    //        new Sphere(Vector3f(1.f, 0.f, -1.f), 0.5f, std::make_unique<Metal>(math::Vector3f(.8f, .6f, .2f), 0.3f)));
+    //    world.list.push_back(new Sphere(Vector3f(-1.f, 0.f, -1.f), 0.5f, std::make_unique<Dielectric>(1.5f)));
+    //    world.list.push_back(new Sphere(Vector3f(-1.f, 0.f, -1.f), -0.45f, std::make_unique<Dielectric>(1.5f)));
+    createRandomScene(world);
     while (running)
     {
         // Handle events on queue
