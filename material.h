@@ -6,9 +6,7 @@
 class Material
 {
 public:
-    virtual ~Material()
-    {
-    }
+    virtual ~Material() {}
     virtual bool scatter(const math::Rayf& rayIn, const HitData& hitData, math::Vector3f& attenuation,
                          math::Rayf& scattered) const = 0;
 };
@@ -21,7 +19,7 @@ public:
     {
     }
 
-    bool scatter(const math::Rayf& rayIn, const HitData& hitData, math::Vector3f& attenuation,
+    bool scatter(const math::Rayf&, const HitData& hitData, math::Vector3f& attenuation,
                  math::Rayf& scattered) const override
     {
         math::Vector3f target = hitData.p + hitData.normal + RandomInUnitSphere();

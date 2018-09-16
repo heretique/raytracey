@@ -1,6 +1,7 @@
 #pragma once
 
 #include "hitable.h"
+#include <memory>
 
 class Sphere : public Hitable
 {
@@ -8,6 +9,7 @@ public:
     Sphere()
     {
     }
+    ~Sphere() override {}
     Sphere(math::Vector3f center, float radius, std::unique_ptr<Material> material)
         : center(center)
         , radius(radius)

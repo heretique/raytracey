@@ -10,7 +10,7 @@ public:
     {
         HitData tmpHitData;
         bool    hitAnything  = false;
-        double  closestSofar = tMax;
+        float   closestSofar = tMax;
         for (const auto* hitable : list)
         {
             if (hitable->hit(r, tMin, closestSofar, tmpHitData))

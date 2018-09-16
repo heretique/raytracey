@@ -1,9 +1,10 @@
 #include "utils.h"
+#include <ctime>
 #include <random>
 
-auto                                  seed = time(0);
-std::mt19937                          gRng(seed);
-std::uniform_real_distribution<float> gDistribution;
+static auto                                  seed = time(nullptr);
+static std::mt19937                          gRng(seed);
+static std::uniform_real_distribution<float> gDistribution;
 
 math::Vector3f RandomInUnitSphere()
 {
