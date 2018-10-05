@@ -19,11 +19,11 @@ public:
     {
     }
 
-    bool scatter(const math::Rayf&, const HitData& hitData, math::Vector3f& attenuation,
+    bool scatter(const math::Rayf& rayIn, const HitData& hitData, math::Vector3f& attenuation,
                  math::Rayf& scattered) const override
     {
         math::Vector3f target = hitData.p + hitData.normal + RandomInUnitSphere();
-        scattered             = math::Rayf(hitData.p, target - hitData.p);
+        scattered             = math::Rayf(hitData.p, target - hitData.p, rayIn.time());
         attenuation           = albedo;
         return true;
     }

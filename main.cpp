@@ -1,6 +1,7 @@
 #define SDL_MAIN_HANDLED
 
 #define FMT_HEADER_ONLY
+#include "BvhNode.h"
 #include "HitableList.h"
 #include "JobManager.h"
 #include "camera.h"
@@ -18,7 +19,7 @@
 
 const int SCREEN_WIDTH  = 800;
 const int SCREEN_HEIGHT = 400;
-const int SAMPLES       = 200;
+const int SAMPLES       = 500;
 
 using namespace math;
 
@@ -95,15 +96,17 @@ void createRandomScene(HitableList& world)
             {
                 if (chooseMat < .8f)
                 {
-                    world.list.push_back(
-                        new Sphere(center, .2f, std::make_unique<Lambertian>(Vector3f(
-                                                    rand01() * rand01(), rand01() * rand01(), rand01() * rand01()))));
+                    world.list.push_back(new Sphere(center, .2f,
+                                                    std::make_unique<Lambertian>(Vector3f(
+                                                        rand01() * rand01(), rand01() * rand01(), rand01() * rand01())),
+                                                    rand01() * math::Vector3f(1.f, 1.f, 1.f)));
                 }
                 else if (chooseMat < .95f)
                 {
-                    world.list.push_back(new Sphere(
-                        center, .2f, std::make_unique<Metal>(
-                                         Vector3f(.5f * (1 + rand01()), .5f * (1 + rand01()), .5f * (1 + rand01())))));
+                    world.list.push_back(
+                        new Sphere(center, .2f,
+                                   std::make_unique<Metal>(
+                                       Vector3f(.5f * (1 + rand01()), .5f * (1 + rand01()), .5f * (1 + rand01())))));
                 }
                 else
                 {
@@ -152,14 +155,14 @@ int main(int argc, char** argv)
 
     bool running = true;
     // Event handler
-    SDL_Event e;
-    Uint32    y = 0;
-    Vector3f  eye(3.f, 3.f, 2.f);
-    Vector3f  lookAt(0.f, 0.f, -1.f);
-    float     focusDist = length(eye - lookAt);
-    float     aperture  = .2f;
-    Camera    cam(eye, lookAt, Vector3f(0.f, 1.f, 0.f), 45, float(SCREEN_WIDTH) / float(SCREEN_HEIGHT), aperture,
-               focusDist);
+    SDL_Event   e;
+    Uint32      y = 0;
+    Vector3f    eye(3.f, 3.f, 2.f);
+    Vector3f    lookAt(0.f, 0.f, -1.f);
+    float       focusDist = length(eye - lookAt);
+    float       aperture  = .2f;
+    Camera      cam(eye, lookAt, Vector3f(0.f, 1.f, 0.f), 45, float(SCREEN_WIDTH) / float(SCREEN_HEIGHT), aperture,
+               focusDist, 0.f, 1.f);
     HitableList world;
     //    world.list.push_back(
     //        new Sphere(Vector3f(0.f, 0.f, -1.f), 0.5f, std::make_unique<Lambertian>(math::Vector3f(.8f, .3f, .3f))));
@@ -171,6 +174,7 @@ int main(int argc, char** argv)
     //    world.list.push_back(new Sphere(Vector3f(-1.f, 0.f, -1.f), 0.5f, std::make_unique<Dielectric>(1.5f)));
     //    world.list.push_back(new Sphere(Vector3f(-1.f, 0.f, -1.f), -0.45f, std::make_unique<Dielectric>(1.5f)));
     createRandomScene(world);
+    BvhNode bvhRoot(world.list, 0.f, 1.f);
     while (running)
     {
         // Handle events on queue
@@ -204,7 +208,7 @@ int main(int argc, char** argv)
             for (int x = 0; x < SCREEN_WIDTH; ++x)
             {
                 // main processing job (captures stuff)
-                auto color = [=, &cam, &world](void*, size_t) {
+                auto color = [=, &cam, &bvhRoot](void*, size_t) {
                     Vector3f colorVec;
                     for (int i = 0; i < SAMPLES; ++i)
                     {
@@ -212,17 +216,17 @@ int main(int argc, char** argv)
                         float v = (float(SCREEN_HEIGHT - y - 1) + rand01()) / SCREEN_HEIGHT;
                         Rayf  r = cam.getRay(u, v);
 
-                        auto colorImpl = [](const Rayf& r, const HitableList& world, int depth,
+                        auto colorImpl = [](const Rayf& r, const BvhNode& bvhRoot, int depth,
                                             auto& colorRef) -> Vector3f {
                             Vector3f colorVec;
                             HitData  hitData;
-                            if (world.hit(r, 0.001f, std::numeric_limits<float>::max(), hitData))
+                            if (bvhRoot.hit(r, 0.001f, std::numeric_limits<float>::max(), hitData))
                             {
                                 math::Rayf     scattered;
                                 math::Vector3f attenuation;
                                 if (depth < 20 && hitData.materialPtr->scatter(r, hitData, attenuation, scattered))
                                 {
-                                    return attenuation * colorRef(scattered, world, depth + 1, colorRef);
+                                    return attenuation * colorRef(scattered, bvhRoot, depth + 1, colorRef);
                                 }
                                 else
                                 {
@@ -238,7 +242,7 @@ int main(int argc, char** argv)
                             return colorVec;
                         };
 
-                        colorVec += colorImpl(r, world, 0, colorImpl);
+                        colorVec += colorImpl(r, bvhRoot, 0, colorImpl);
                     }
 
                     SDL_Color color;
@@ -265,6 +269,8 @@ int main(int argc, char** argv)
     }
 
     jobMgr.release();
+
+    bvhRoot.release();
 
     for (auto* hitable : world.list)
     {

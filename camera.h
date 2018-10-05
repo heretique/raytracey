@@ -8,10 +8,12 @@ class Camera
 {
 public:
     Camera(math::Vector3f eye, math::Vector3f lookAt, math::Vector3f up, float vFov, float aspect, float aperture,
-           float focusDistance)
+           float focusDistance, float timeStart, float timeEnd)
     {
         using namespace math;
 
+        this->timeStart  = timeStart;
+        this->timeEnd    = timeEnd;
         lensRadius       = aperture / 2;
         float theta      = vFov * M_PI / 180.0f;
         float halfHeight = std::tanf(theta / 2);
@@ -29,13 +31,17 @@ public:
     {
         math::Vector3f rd     = lensRadius * RandomInUnitDisk();
         math::Vector3f offset = u * rd.x + v * rd.y;
-        return math::Rayf(origin + offset, lowerLeft + s * horizontal + t * vertical - origin - offset);
+        float          time   = timeStart + rand01() * (timeStart - timeEnd);
+        return math::Rayf(origin + offset, lowerLeft + s * horizontal + t * vertical - origin - offset, time);
     }
 
+public:
     math::Vector3f origin;
     math::Vector3f lowerLeft;
     math::Vector3f horizontal;
     math::Vector3f vertical;
     math::Vector3f u, v, w;
     float          lensRadius;
+    float          timeStart;
+    float          timeEnd;
 };

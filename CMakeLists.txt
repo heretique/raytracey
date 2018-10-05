@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.5)
 add_executable(raytracey "")
 
 target_sources(raytracey PRIVATE main.cpp
+    aabb.h
+    BvhNode.h
     camera.h
     vector.h
     ray.h

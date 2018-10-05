@@ -1,5 +1,6 @@
 #pragma once
 
+#include "aabb.h"
 #include "ray.h"
 
 class Material;
@@ -15,9 +16,8 @@ struct HitData
 class Hitable
 {
 public:
-    virtual ~Hitable()
-    {
-    }
+    virtual ~Hitable() {}
 
     virtual bool hit(const math::Rayf& r, float tMin, float tMax, HitData& hitData) const = 0;
+    virtual bool boundingBox(float tMin, float tMax, math::AABBf& bbox) const             = 0;
 };

@@ -50,3 +50,24 @@ math::Vector3f RandomInUnitDisk()
     } while (math::dot(p, p) >= 1.f);
     return p;
 }
+
+bool cmpf(float a, float b, float epsilon)
+{
+    return fabs(a - b) < epsilon;
+}
+
+math::AABBf sphereBbox(const math::Vector3f& center, const float radius)
+{
+    using namespace math;
+    return AABBf(center - Vector3f(radius, radius, radius), center + Vector3f(radius, radius, radius));
+}
+
+math::AABBf surroundingBbox(const math::AABBf& bbox1, const math::AABBf& bbox2)
+{
+    using namespace math;
+    Vector3f small(
+        fminf(bbox1.min().x, bbox2.min().x), fminf(bbox1.min().y, bbox2.min().y), fminf(bbox1.min().z, bbox2.min().z));
+    Vector3f big(
+        fmaxf(bbox1.max().x, bbox2.max().x), fmaxf(bbox1.max().y, bbox2.max().y), fmaxf(bbox1.max().z, bbox2.max().z));
+    return AABBf(small, big);
+}

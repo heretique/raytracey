@@ -1,6 +1,7 @@
 #pragma once
 
 #include "hitable.h"
+#include "utils.h"
 #include <vector>
 
 class HitableList : public Hitable
@@ -22,6 +23,31 @@ public:
         }
 
         return hitAnything;
+    }
+
+    bool boundingBox(float tMin, float tMax, math::AABBf& bbox) const override
+    {
+        using namespace math;
+
+        if (list.size() < 1)
+            return false;
+
+        AABBf tmpBbox;
+        bool  result = list[0]->boundingBox(tMin, tMax, tmpBbox);
+        if (!result)
+            return false;
+
+        for (size_t i = 0; i < list.size(); ++i)
+        {
+            if (list[i]->boundingBox(tMin, tMax, tmpBbox))
+            {
+                bbox = surroundingBbox(bbox, tmpBbox);
+            }
+            else
+                return false;
+        }
+
+        return true;
     }
 
     std::vector<Hitable*> list;
