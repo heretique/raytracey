@@ -1,11 +1,9 @@
 #define SDL_MAIN_HANDLED
 
-#define FMT_HEADER_ONLY
 #include "BvhNode.h"
 #include "HitableList.h"
 #include "JobManager.h"
 #include "camera.h"
-#include "fmt/printf.h"
 #include "material.h"
 #include "ray.h"
 #include "sphere.h"
@@ -13,6 +11,7 @@
 #include "vector.h"
 
 #include <chrono>
+#include <iostream>
 #include <limits>
 #include <random>
 #include <SDL2/SDL.h>
@@ -26,7 +25,7 @@ using namespace math;
 void ClearSurface(SDL_Surface* surface)
 {
     assert(nullptr != surface);
-    SDL_FillRect(surface, NULL, SDL_MapRGB(surface->format, 0x0, 0x0, 0x0));
+    SDL_FillRect(surface, nullptr, SDL_MapRGB(surface->format, 0x0, 0x0, 0x0));
 }
 
 void SetPixel(SDL_Surface* surface, Uint32 x, Uint32 y, SDL_Color color, float blendFactor = 1.f)
@@ -56,9 +55,9 @@ void SetPixel(SDL_Surface* surface, Uint32 x, Uint32 y, SDL_Color color, float b
     SDL_GetRGB(bufferCol, surfaceFormat, &bufferColor.r, &bufferColor.g, &bufferColor.b);
     SDL_Color blendedColor;
     // and blend
-    blendedColor.r = color.r * blendFactor + (1.f - blendFactor) * bufferColor.r;
-    blendedColor.g = color.g * blendFactor + (1.f - blendFactor) * bufferColor.g;
-    blendedColor.b = color.b * blendFactor + (1.f - blendFactor) * bufferColor.b;
+    blendedColor.r = Uint8(color.r * blendFactor + (1.f - blendFactor) * bufferColor.r);
+    blendedColor.g = Uint8(color.g * blendFactor + (1.f - blendFactor) * bufferColor.g);
+    blendedColor.b = Uint8(color.b * blendFactor + (1.f - blendFactor) * bufferColor.b);
     // convert and copy
     Uint32 col = SDL_MapRGB(surfaceFormat, blendedColor.r, blendedColor.g, blendedColor.b);
     memcpy(pixel, &col, surfaceBytesPerPixel);
@@ -84,7 +83,6 @@ SDL_Color GetPixel(SDL_Surface* surface, Uint32 x, Uint32 y)
 
 void createRandomScene(HitableList& world)
 {
-    int n = 500;
     world.list.push_back(
         new Sphere(Vector3f(0.f, -1000.f, 0.f), 1000.f, std::make_unique<Lambertian>(math::Vector3f(.5f, .5f, .5f))));
     for (int a = -11; a < 11; ++a)
@@ -122,14 +120,14 @@ void createRandomScene(HitableList& world)
         new Sphere(Vector3f(4.f, 1.f, 0.f), 1.f, std::make_unique<Metal>(math::Vector3f(.7f, .6f, .5f), 0.f)));
 }
 
-int main(int argc, char** argv)
+int main(int /*argc*/, char** /*argv*/)
 {
     SDL_Window*  window  = nullptr;
     SDL_Surface* surface = nullptr;
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
-        fmt::print("SDL could no initialize! SDL_Error: {}.\n", SDL_GetError());
+        std::cerr << "SDL could no initialize! SDL_Error: " << SDL_GetError() << ".\n";
         return -1;
     }
 
@@ -137,7 +135,7 @@ int main(int argc, char** argv)
                               SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
     if (nullptr == window)
     {
-        fmt::print("Window could not be created! SDL_Error: {}.\n", SDL_GetError());
+        std::cerr << "Window could not be created! SDL_Error: " << SDL_GetError() << ".\n";
         return -1;
     }
 
@@ -205,7 +203,7 @@ int main(int argc, char** argv)
 
         if (y < SCREEN_HEIGHT)
         {
-            for (int x = 0; x < SCREEN_WIDTH; ++x)
+            for (Uint32 x = 0; x < SCREEN_WIDTH; ++x)
             {
                 // main processing job (captures stuff)
                 auto color = [=, &cam, &bvhRoot](void*, size_t) {
@@ -246,9 +244,9 @@ int main(int argc, char** argv)
                     }
 
                     SDL_Color color;
-                    color.r = 255.99f * (std::sqrt(colorVec.r / SAMPLES));
-                    color.g = 255.99f * (std::sqrt(colorVec.g / SAMPLES));
-                    color.b = 255.99f * (std::sqrt(colorVec.b / SAMPLES));
+                    color.r = Uint8(255.99f * (std::sqrt(colorVec.r / SAMPLES)));
+                    color.g = Uint8(255.99f * (std::sqrt(colorVec.g / SAMPLES)));
+                    color.b = Uint8(255.99f * (std::sqrt(colorVec.b / SAMPLES)));
                     color.a = 255;
                     SetPixel(surface, x, y, color);
                 };

@@ -5,7 +5,7 @@
 #include <mutex>
 #include <vector>
 
-class Job;
+struct Job;
 
 typedef std::function<void(void*, size_t)> JobFunc;
 typedef std::function<void()>              JobDoneFunc;
