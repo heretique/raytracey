@@ -1,13 +1,14 @@
 #pragma once
 
 #include "hitable.h"
-#include "utils.h"
 #include <iostream>
 #include <vector>
+#include <Hq/Math/Utils.h>
+#include <Hq/Rng.h>
 
 bool bboxXCompare(const Hitable* a, const Hitable* b)
 {
-    math::AABBf bboxLeft, bboxRight;
+    hq::math::AABBf bboxLeft, bboxRight;
     if (!a->boundingBox(0.f, 0.f, bboxLeft) || !b->boundingBox(0.f, 0.f, bboxRight))
     {
         std::cerr << "No bounding box in BvhNode constructor\n";
@@ -20,7 +21,7 @@ bool bboxXCompare(const Hitable* a, const Hitable* b)
 
 bool bboxYCompare(const Hitable* a, const Hitable* b)
 {
-    math::AABBf bboxLeft, bboxRight;
+    hq::math::AABBf bboxLeft, bboxRight;
     if (!a->boundingBox(0.f, 0.f, bboxLeft) || !b->boundingBox(0.f, 0.f, bboxRight))
     {
         std::cerr << "No bounding box in BvhNode constructor\n";
@@ -32,7 +33,7 @@ bool bboxYCompare(const Hitable* a, const Hitable* b)
 }
 bool bboxZCompare(const Hitable* a, const Hitable* b)
 {
-    math::AABBf bboxLeft, bboxRight;
+    hq::math::AABBf bboxLeft, bboxRight;
     if (!a->boundingBox(0.f, 0.f, bboxLeft) || !b->boundingBox(0.f, 0.f, bboxRight))
     {
         std::cerr << "No bounding box in BvhNode constructor\n";
@@ -52,7 +53,7 @@ public:
         left  = nullptr;
         right = nullptr;
 
-        int axis = int(3.f * rand01());
+        int axis = int(3.f * hq::rand01());
         if (axis == 0)
         {
             std::sort(list.begin(), list.end(), bboxXCompare);
@@ -82,7 +83,7 @@ public:
             left  = new BvhNode(subLeft, tMin, tMax);
             right = new BvhNode(subRight, tMin, tMax);
         }
-        math::AABBf bboxLeft, bboxRight;
+        hq::math::AABBf bboxLeft, bboxRight;
         if (!left->boundingBox(tMin, tMax, bboxLeft) || !right->boundingBox(tMin, tMax, bboxRight))
         {
             std::cerr << "No bounding box in BvhNode constructor\n";
@@ -104,7 +105,7 @@ public:
         }
     }
 
-    bool hit(const math::Rayf& r, float tMin, float tMax, HitData& hitData) const override
+    bool hit(const hq::math::Rayf& r, float tMin, float tMax, HitData& hitData) const override
     {
         if (bbox.hit(r, tMin, tMax))
         {
@@ -135,14 +136,14 @@ public:
         else
             return false;
     }
-    bool boundingBox(float /*tMin*/, float /*tMax*/, math::AABBf& bbox) const override
+    bool boundingBox(float /*tMin*/, float /*tMax*/, hq::math::AABBf& bbox) const override
     {
         bbox = this->bbox;
         return true;
     }
 
 public:
-    Hitable*    left;
-    Hitable*    right;
-    math::AABBf bbox;
+    Hitable*        left;
+    Hitable*        right;
+    hq::math::AABBf bbox;
 };

@@ -1,13 +1,13 @@
 #pragma once
 
 #include "hitable.h"
-#include "utils.h"
 #include <vector>
+#include <Hq/Math/Utils.h>
 
 class HitableList : public Hitable
 {
 public:
-    bool hit(const math::Rayf& r, float tMin, float tMax, HitData& hitData) const override
+    bool hit(const hq::math::Rayf& r, float tMin, float tMax, HitData& hitData) const override
     {
         HitData tmpHitData;
         bool    hitAnything  = false;
@@ -25,9 +25,9 @@ public:
         return hitAnything;
     }
 
-    bool boundingBox(float tMin, float tMax, math::AABBf& bbox) const override
+    bool boundingBox(float tMin, float tMax, hq::math::AABBf& bbox) const override
     {
-        using namespace math;
+        using namespace hq::math;
 
         if (list.size() < 1)
             return false;

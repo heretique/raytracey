@@ -2,13 +2,13 @@
 
 #include "BvhNode.h"
 #include "HitableList.h"
-#include "JobManager.h"
 #include "camera.h"
 #include "material.h"
-#include "ray.h"
 #include "sphere.h"
-#include "utils.h"
-#include "vector.h"
+#include <Hq/JobManager.h>
+#include <Hq/Math/Ray.h>
+#include <Hq/Math/Utils.h>
+#include <Hq/Math/Vector.h>
 
 #include <chrono>
 #include <iostream>
@@ -19,8 +19,10 @@
 const int SCREEN_WIDTH  = 800;
 const int SCREEN_HEIGHT = 400;
 const int SAMPLES       = 500;
+const int MAX_DEPTH     = 20;
 
-using namespace math;
+using namespace hq;
+using namespace hq::math;
 
 void ClearSurface(SDL_Surface* surface)
 {
@@ -84,7 +86,7 @@ SDL_Color GetPixel(SDL_Surface* surface, Uint32 x, Uint32 y)
 void createRandomScene(HitableList& world)
 {
     world.list.push_back(
-        new Sphere(Vector3f(0.f, -1000.f, 0.f), 1000.f, std::make_unique<Lambertian>(math::Vector3f(.5f, .5f, .5f))));
+        new Sphere(Vector3f(0.f, -1000.f, 0.f), 1000.f, std::make_unique<Lambertian>(Vector3f(.5f, .5f, .5f))));
     for (int a = -11; a < 11; ++a)
         for (int b = -11; b < 11; ++b)
         {
@@ -94,10 +96,10 @@ void createRandomScene(HitableList& world)
             {
                 if (chooseMat < .8f)
                 {
-                    world.list.push_back(new Sphere(center, .2f,
-                                                    std::make_unique<Lambertian>(Vector3f(
-                                                        rand01() * rand01(), rand01() * rand01(), rand01() * rand01())),
-                                                    rand01() * math::Vector3f(1.f, 1.f, 1.f)));
+                    world.list.push_back(
+                        new Sphere(center, .2f,
+                                   std::make_unique<Lambertian>(
+                                       Vector3f(rand01() * rand01(), rand01() * rand01(), rand01() * rand01()))));
                 }
                 else if (chooseMat < .95f)
                 {
@@ -115,9 +117,9 @@ void createRandomScene(HitableList& world)
 
     world.list.push_back(new Sphere(Vector3f(0.f, 1.f, 0.f), 1.f, std::make_unique<Dielectric>(1.5f)));
     world.list.push_back(
-        new Sphere(Vector3f(-4.f, 1.f, 0.f), 1.f, std::make_unique<Lambertian>(math::Vector3f(.4f, .2f, .1f))));
+        new Sphere(Vector3f(-4.f, 1.f, 0.f), 1.f, std::make_unique<Lambertian>(Vector3f(.4f, .2f, .1f))));
     world.list.push_back(
-        new Sphere(Vector3f(4.f, 1.f, 0.f), 1.f, std::make_unique<Metal>(math::Vector3f(.7f, .6f, .5f), 0.f)));
+        new Sphere(Vector3f(4.f, 1.f, 0.f), 1.f, std::make_unique<Metal>(Vector3f(.7f, .6f, .5f), 0.f)));
 }
 
 int main(int /*argc*/, char** /*argv*/)
@@ -222,7 +224,8 @@ int main(int /*argc*/, char** /*argv*/)
                             {
                                 math::Rayf     scattered;
                                 math::Vector3f attenuation;
-                                if (depth < 20 && hitData.materialPtr->scatter(r, hitData, attenuation, scattered))
+                                if (depth < MAX_DEPTH &&
+                                    hitData.materialPtr->scatter(r, hitData, attenuation, scattered))
                                 {
                                     return attenuation * colorRef(scattered, bvhRoot, depth + 1, colorRef);
                                 }

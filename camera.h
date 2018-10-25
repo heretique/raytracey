@@ -1,16 +1,17 @@
 #pragma once
 
-#include "ray.h"
-#include "utils.h"
-#include "vector.h"
+#include <Hq/Math/Ray.h>
+#include <Hq/Math/Utils.h>
+#include <Hq/Math/Vector.h>
+#include <Hq/Rng.h>
 
 class Camera
 {
 public:
-    Camera(math::Vector3f eye, math::Vector3f lookAt, math::Vector3f up, float vFov, float aspect, float aperture,
-           float focusDistance, float timeStart, float timeEnd)
+    Camera(hq::math::Vector3f eye, hq::math::Vector3f lookAt, hq::math::Vector3f up, float vFov, float aspect,
+           float aperture, float focusDistance, float timeStart, float timeEnd)
     {
-        using namespace math;
+        using namespace hq::math;
 
         this->timeStart  = timeStart;
         this->timeEnd    = timeEnd;
@@ -27,21 +28,21 @@ public:
         vertical         = 2 * halfHeight * focusDistance * v;
     }
 
-    math::Rayf getRay(float s, float t)
+    hq::math::Rayf getRay(float s, float t)
     {
-        math::Vector3f rd     = lensRadius * RandomInUnitDisk();
-        math::Vector3f offset = u * rd.x + v * rd.y;
-        float          time   = timeStart + rand01() * (timeStart - timeEnd);
-        return math::Rayf(origin + offset, lowerLeft + s * horizontal + t * vertical - origin - offset, time);
+        hq::math::Vector3f rd     = lensRadius * hq::math::RandomInUnitDisk();
+        hq::math::Vector3f offset = u * rd.x + v * rd.y;
+        float              time   = timeStart + hq::rand01() * (timeStart - timeEnd);
+        return hq::math::Rayf(origin + offset, lowerLeft + s * horizontal + t * vertical - origin - offset, time);
     }
 
 public:
-    math::Vector3f origin;
-    math::Vector3f lowerLeft;
-    math::Vector3f horizontal;
-    math::Vector3f vertical;
-    math::Vector3f u, v, w;
-    float          lensRadius;
-    float          timeStart;
-    float          timeEnd;
+    hq::math::Vector3f origin;
+    hq::math::Vector3f lowerLeft;
+    hq::math::Vector3f horizontal;
+    hq::math::Vector3f vertical;
+    hq::math::Vector3f u, v, w;
+    float              lensRadius;
+    float              timeStart;
+    float              timeEnd;
 };

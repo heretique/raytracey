@@ -1,25 +1,26 @@
 #pragma once
 
 #include "hitable.h"
-#include "utils.h"
 #include <memory>
+#include <Hq/Math/Utils.h>
+#include <Hq/Utils.h>
 
 class Sphere : public Hitable
 {
 public:
     Sphere() {}
     ~Sphere() override {}
-    Sphere(math::Vector3f center, float radius, std::unique_ptr<Material> material,
-           math::Vector3f velocity = math::Vector3f(0.f, 0.f, 0.f))
+    Sphere(hq::math::Vector3f center, float radius, std::unique_ptr<Material> material,
+           hq::math::Vector3f velocity = hq::math::Vector3f(0.f, 0.f, 0.f))
         : center(center)
         , radius(radius)
         , material(std::move(material))
         , velocity(velocity)
     {
     }
-    bool hit(const math::Rayf& r, float tMin, float tMax, HitData& hitData) const override
+    bool hit(const hq::math::Rayf& r, float tMin, float tMax, HitData& hitData) const override
     {
-        using namespace math;
+        using namespace hq::math;
         Vector3f oc           = r.origin() - getCenter(r.time());
         float    a            = dot(r.direction(), r.direction());
         float    b            = dot(oc, r.direction());
@@ -49,10 +50,10 @@ public:
         return false;
     }
 
-    bool boundingBox(float tMin, float tMax, math::AABBf& bbox) const override
+    bool boundingBox(float tMin, float tMax, hq::math::AABBf& bbox) const override
     {
-        using namespace math;
-        if (cmpf(tMin, tMax, util::epsilon))
+        using namespace hq::math;
+        if (hq::cmpf(tMin, tMax, hq::util::epsilon))
         {
             bbox = sphereBbox(getCenter(tMin), radius);
         }
@@ -66,14 +67,14 @@ public:
         return true;
     }
 
-    math::Vector3f getCenter(const float time) const
+    hq::math::Vector3f getCenter(const float time) const
     {
         return center + velocity * time;
     }
 
 public:
-    math::Vector3f            center;
+    hq::math::Vector3f        center;
     float                     radius;
     std::unique_ptr<Material> material;
-    math::Vector3f            velocity;
+    hq::math::Vector3f        velocity;
 };

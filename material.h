@@ -1,40 +1,42 @@
 #pragma once
 
 #include "hitable.h"
-#include "utils.h"
+#include <Hq/Math/Utils.h>
+#include <Hq/Rng.h>
 
 class Material
 {
 public:
     virtual ~Material() {}
-    virtual bool scatter(const math::Rayf& rayIn, const HitData& hitData, math::Vector3f& attenuation,
-                         math::Rayf& scattered) const = 0;
+    virtual bool scatter(const hq::math::Rayf& rayIn, const HitData& hitData, hq::math::Vector3f& attenuation,
+                         hq::math::Rayf& scattered) const = 0;
 };
 
 class Lambertian : public Material
 {
 public:
-    Lambertian(const math::Vector3f& albedo)
+    Lambertian(const hq::math::Vector3f& albedo)
         : albedo(albedo)
     {
     }
 
-    bool scatter(const math::Rayf& rayIn, const HitData& hitData, math::Vector3f& attenuation,
-                 math::Rayf& scattered) const override
+    bool scatter(const hq::math::Rayf& rayIn, const HitData& hitData, hq::math::Vector3f& attenuation,
+                 hq::math::Rayf& scattered) const override
     {
-        math::Vector3f target = hitData.p + hitData.normal + RandomInUnitSphere();
-        scattered             = math::Rayf(hitData.p, target - hitData.p, rayIn.time());
-        attenuation           = albedo;
+        using namespace hq::math;
+        Vector3f target = hitData.p + hitData.normal + RandomInUnitSphere();
+        scattered       = Rayf(hitData.p, target - hitData.p, rayIn.time());
+        attenuation     = albedo;
         return true;
     }
 
-    math::Vector3f albedo;
+    hq::math::Vector3f albedo;
 };
 
 class Metal : public Material
 {
 public:
-    Metal(const math::Vector3f& albedo, float roughness = 0.f)
+    Metal(const hq::math::Vector3f& albedo, float roughness = 0.f)
         : albedo(albedo)
     {
         if (roughness < 1.f)
@@ -43,17 +45,18 @@ public:
             this->roughness = 1.f;
     }
 
-    bool scatter(const math::Rayf& rayIn, const HitData& hitData, math::Vector3f& attenuation,
-                 math::Rayf& scattered) const override
+    bool scatter(const hq::math::Rayf& rayIn, const HitData& hitData, hq::math::Vector3f& attenuation,
+                 hq::math::Rayf& scattered) const override
     {
-        math::Vector3f reflected = reflect(rayIn.direction(), hitData.normal);
-        scattered                = math::Rayf(hitData.p, reflected + roughness * RandomInUnitSphere());
-        attenuation              = albedo;
-        return (math::dot(scattered.direction(), hitData.normal) > 0.f);
+        using namespace hq::math;
+        Vector3f reflected = reflect(rayIn.direction(), hitData.normal);
+        scattered          = Rayf(hitData.p, reflected + roughness * RandomInUnitSphere());
+        attenuation        = albedo;
+        return (dot(scattered.direction(), hitData.normal) > 0.f);
     }
 
-    math::Vector3f albedo;
-    float          roughness;
+    hq::math::Vector3f albedo;
+    float              roughness;
 };
 
 class Dielectric : public Material
@@ -64,27 +67,28 @@ public:
     {
     }
 
-    bool scatter(const math::Rayf& rayIn, const HitData& hitData, math::Vector3f& attenuation,
-                 math::Rayf& scattered) const override
+    bool scatter(const hq::math::Rayf& rayIn, const HitData& hitData, hq::math::Vector3f& attenuation,
+                 hq::math::Rayf& scattered) const override
     {
-        math::Vector3f outwardNormal;
-        math::Vector3f reflected = reflect(rayIn.direction(), hitData.normal);
-        float          niOverNt;
-        attenuation = math::Vector3f(1.f, 1.f, 1.f);
-        math::Vector3f refracted;
-        float          reflectProb;
-        float          cosine;
-        if (math::dot(rayIn.direction(), hitData.normal) > 0.f)
+        using namespace hq::math;
+        Vector3f outwardNormal;
+        Vector3f reflected = reflect(rayIn.direction(), hitData.normal);
+        float    niOverNt;
+        attenuation = Vector3f(1.f, 1.f, 1.f);
+        Vector3f refracted;
+        float    reflectProb;
+        float    cosine;
+        if (dot(rayIn.direction(), hitData.normal) > 0.f)
         {
             outwardNormal = -hitData.normal;
             niOverNt      = refIdx;
-            cosine        = refIdx * math::dot(rayIn.direction(), hitData.normal);
+            cosine        = refIdx * dot(rayIn.direction(), hitData.normal);
         }
         else
         {
             outwardNormal = hitData.normal;
             niOverNt      = 1.f / refIdx;
-            cosine        = -math::dot(rayIn.direction(), hitData.normal);
+            cosine        = -dot(rayIn.direction(), hitData.normal);
         }
         if (refract(rayIn.direction(), outwardNormal, niOverNt, refracted))
         {
@@ -92,16 +96,16 @@ public:
         }
         else
         {
-            scattered   = math::Rayf(hitData.p, reflected);
+            scattered   = Rayf(hitData.p, reflected);
             reflectProb = 1.f;
         }
-        if (rand01() < reflectProb)
+        if (hq::rand01() < reflectProb)
         {
-            scattered = math::Rayf(hitData.p, reflected);
+            scattered = Rayf(hitData.p, reflected);
         }
         else
         {
-            scattered = math::Rayf(hitData.p, refracted);
+            scattered = Rayf(hitData.p, refracted);
         }
 
         return true;
