@@ -17,8 +17,8 @@
 #include <SDL2/SDL.h>
 
 const int SCREEN_WIDTH  = 800;
-const int SCREEN_HEIGHT = 400;
-const int SAMPLES       = 500;
+const int SCREEN_HEIGHT = 600;
+const int SAMPLES       = 50;
 const int MAX_DEPTH     = 20;
 
 using namespace hq;
@@ -85,8 +85,10 @@ SDL_Color GetPixel(SDL_Surface* surface, Uint32 x, Uint32 y)
 
 void createRandomScene(HitableList& world)
 {
-    world.list.push_back(
-        new Sphere(Vector3f(0.f, -1000.f, 0.f), 1000.f, std::make_unique<Lambertian>(Vector3f(.5f, .5f, .5f))));
+    world.list.push_back(new Sphere(Vector3f(0.f, -1000.f, 0.f), 1000.f,
+                                    std::make_unique<Lambertian>(std::make_shared<CheckerTexture>(
+                                        std::make_shared<ColorTexture>(Vector3f(.5f, .5f, .5f)),
+                                        std::make_shared<ColorTexture>(Vector3f(.2f, .3f, .1f))))));
     for (int a = -11; a < 11; ++a)
         for (int b = -11; b < 11; ++b)
         {
@@ -98,8 +100,8 @@ void createRandomScene(HitableList& world)
                 {
                     world.list.push_back(
                         new Sphere(center, .2f,
-                                   std::make_unique<Lambertian>(
-                                       Vector3f(rand01() * rand01(), rand01() * rand01(), rand01() * rand01()))));
+                                   std::make_unique<Lambertian>(std::make_shared<ColorTexture>(
+                                       Vector3f(rand01() * rand01(), rand01() * rand01(), rand01() * rand01())))));
                 }
                 else if (chooseMat < .95f)
                 {
@@ -117,9 +119,20 @@ void createRandomScene(HitableList& world)
 
     world.list.push_back(new Sphere(Vector3f(0.f, 1.f, 0.f), 1.f, std::make_unique<Dielectric>(1.5f)));
     world.list.push_back(
-        new Sphere(Vector3f(-4.f, 1.f, 0.f), 1.f, std::make_unique<Lambertian>(Vector3f(.4f, .2f, .1f))));
+        new Sphere(Vector3f(-4.f, 1.f, 0.f), 1.f,
+                   std::make_unique<Lambertian>(std::make_shared<ColorTexture>(Vector3f(.4f, .2f, .1f)))));
     world.list.push_back(
         new Sphere(Vector3f(4.f, 1.f, 0.f), 1.f, std::make_unique<Metal>(Vector3f(.7f, .6f, .5f), 0.f)));
+}
+
+void createScenePerlinTest(HitableList& world)
+{
+    std::shared_ptr<NoiseTexture> noiseTexture = std::make_shared<NoiseTexture>(FastNoise::SimplexFractal);
+    noiseTexture->noise.SetFrequency(1.f);
+
+    world.list.push_back(new Sphere(Vector3f(0.f, -1000.f, 0.f), 1000.f, std::make_unique<Lambertian>(noiseTexture)));
+    world.list.push_back(new Sphere(Vector3f(0.f, 2.f, 0.f), 2.f, std::make_unique<Dielectric>(1.5f)));
+    world.list.push_back(new Sphere(Vector3f(0.f, 2.f, 0.f), 1.5f, std::make_unique<Lambertian>(noiseTexture)));
 }
 
 int main(int /*argc*/, char** /*argv*/)
@@ -157,10 +170,10 @@ int main(int /*argc*/, char** /*argv*/)
     // Event handler
     SDL_Event   e;
     Uint32      y = 0;
-    Vector3f    eye(3.f, 3.f, 2.f);
-    Vector3f    lookAt(0.f, 0.f, -1.f);
+    Vector3f    eye(6.5f, 2.f, 1.5f);
+    Vector3f    lookAt(0.f, 0.f, 0.f);
     float       focusDist = length(eye - lookAt);
-    float       aperture  = .2f;
+    float       aperture  = 0.f;
     Camera      cam(eye, lookAt, Vector3f(0.f, 1.f, 0.f), 45, float(SCREEN_WIDTH) / float(SCREEN_HEIGHT), aperture,
                focusDist, 0.f, 1.f);
     HitableList world;
@@ -173,7 +186,8 @@ int main(int /*argc*/, char** /*argv*/)
     //        new Sphere(Vector3f(1.f, 0.f, -1.f), 0.5f, std::make_unique<Metal>(math::Vector3f(.8f, .6f, .2f), 0.3f)));
     //    world.list.push_back(new Sphere(Vector3f(-1.f, 0.f, -1.f), 0.5f, std::make_unique<Dielectric>(1.5f)));
     //    world.list.push_back(new Sphere(Vector3f(-1.f, 0.f, -1.f), -0.45f, std::make_unique<Dielectric>(1.5f)));
-    createRandomScene(world);
+    //    createRandomScene(world);
+    createScenePerlinTest(world);
     BvhNode bvhRoot(world.list, 0.f, 1.f);
     while (running)
     {

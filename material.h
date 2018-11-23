@@ -3,6 +3,7 @@
 #include "hitable.h"
 #include <Hq/Math/Utils.h>
 #include <Hq/Rng.h>
+#include "Texture.h"
 
 class Material
 {
@@ -15,7 +16,7 @@ public:
 class Lambertian : public Material
 {
 public:
-    Lambertian(const hq::math::Vector3f& albedo)
+    Lambertian(TexturePtr albedo)
         : albedo(albedo)
     {
     }
@@ -26,11 +27,11 @@ public:
         using namespace hq::math;
         Vector3f target = hitData.p + hitData.normal + RandomInUnitSphere();
         scattered       = Rayf(hitData.p, target - hitData.p, rayIn.time());
-        attenuation     = albedo;
+        attenuation     = albedo->value(0.f, 0.f, hitData.p);
         return true;
     }
 
-    hq::math::Vector3f albedo;
+    TexturePtr albedo {nullptr};
 };
 
 class Metal : public Material

@@ -19,11 +19,14 @@ target_sources(raytracey PRIVATE main.cpp
     hitable.h
     sphere.h
     HitableList.h
-    material.h)
+    material.h
+    Texture.h
+    3rdParty/FastNoise/FastNoise.cpp
+    3rdParty/FastNoise/FastNoise.h)
 
 find_package(SDL2 REQUIRED)
 
-target_include_directories(raytracey PRIVATE .)
+target_include_directories(raytracey PRIVATE . 3rdParty)
 
 target_link_libraries(raytracey hq SDL2::SDL2 SDL2::SDL2main)
 
