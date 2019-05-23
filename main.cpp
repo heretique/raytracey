@@ -14,7 +14,9 @@
 #include <iostream>
 #include <limits>
 #include <random>
-#include <SDL2/SDL.h>
+#include <SDL.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb/stb_image.h"
 
 const int SCREEN_WIDTH  = 800;
 const int SCREEN_HEIGHT = 600;
@@ -83,6 +85,42 @@ SDL_Color GetPixel(SDL_Surface* surface, Uint32 x, Uint32 y)
     return color;
 }
 
+class StbImage
+{
+public:
+    StbImage() {}
+    bool load(const std::string& filename)
+    {
+        int channels;
+        _image = std::shared_ptr<unsigned char>(stbi_load(filename.c_str(), &_width, &_height, &channels, 4),
+                                                StbImage::freeImage);
+        return _image != nullptr;
+    }
+
+    const unsigned char* data() const
+    {
+        return _image.get();
+    }
+
+    int width() const
+    {
+        return _width;
+    }
+    int height() const
+    {
+        return _height;
+    }
+
+private:
+    static void freeImage(unsigned char* image)
+    {
+        stbi_image_free(image);
+    }
+    std::shared_ptr<unsigned char> _image  = {nullptr};
+    int                            _width  = {0};
+    int                            _height = {0};
+};
+
 void createRandomScene(HitableList& world)
 {
     world.list.push_back(new Sphere(Vector3f(0.f, -1000.f, 0.f), 1000.f,
@@ -133,6 +171,30 @@ void createScenePerlinTest(HitableList& world)
     world.list.push_back(new Sphere(Vector3f(0.f, -1000.f, 0.f), 1000.f, std::make_unique<Lambertian>(noiseTexture)));
     world.list.push_back(new Sphere(Vector3f(0.f, 2.f, 0.f), 2.f, std::make_unique<Dielectric>(1.5f)));
     world.list.push_back(new Sphere(Vector3f(0.f, 2.f, 0.f), 1.5f, std::make_unique<Lambertian>(noiseTexture)));
+}
+
+std::vector<StbImage> createTexturedScene(HitableList& world)
+{
+    std::vector<StbImage> resources;
+
+    StbImage moon;
+    if (moon.load("moonmap2k.jpg"))
+    {
+        resources.emplace_back(moon);
+        std::shared_ptr<NoiseTexture> noiseTexture = std::make_shared<NoiseTexture>(FastNoise::SimplexFractal);
+
+        noiseTexture->noise.SetFrequency(1.f);
+        world.list.push_back(
+            new Sphere(Vector3f(0.f, -1000.f, 0.f), 1000.f, std::make_unique<Lambertian>(noiseTexture)));
+        world.list.push_back(new Sphere(
+            Vector3f(0.f, 2.f, 0.f), 1.5f,
+            std::make_unique<Lambertian>(std::make_shared<ImageTexture>(moon.data(), moon.width(), moon.height()))));
+        world.list.push_back(
+            new Sphere(Vector3f(1.f, 1.f, 2.f), 0.5f,
+                       std::make_unique<DiffuseLight>(std::make_shared<ColorTexture>(Vector3f(2.f, 2.f, 2.f)))));
+    }
+
+    return resources;
 }
 
 int main(int /*argc*/, char** /*argv*/)
@@ -187,8 +249,9 @@ int main(int /*argc*/, char** /*argv*/)
     //    world.list.push_back(new Sphere(Vector3f(-1.f, 0.f, -1.f), 0.5f, std::make_unique<Dielectric>(1.5f)));
     //    world.list.push_back(new Sphere(Vector3f(-1.f, 0.f, -1.f), -0.45f, std::make_unique<Dielectric>(1.5f)));
     //    createRandomScene(world);
-    createScenePerlinTest(world);
-    BvhNode bvhRoot(world.list, 0.f, 1.f);
+    //    createScenePerlinTest(world);
+    std::vector<StbImage> resources = createTexturedScene(world);
+    BvhNode               bvhRoot(world.list, 0.f, 1.f);
     while (running)
     {
         // Handle events on queue
@@ -238,20 +301,24 @@ int main(int /*argc*/, char** /*argv*/)
                             {
                                 math::Rayf     scattered;
                                 math::Vector3f attenuation;
+                                math::Vector3f emitted =
+                                    hitData.materialPtr->emitted(hitData.uv.u, hitData.uv.v, hitData.p);
                                 if (depth < MAX_DEPTH &&
                                     hitData.materialPtr->scatter(r, hitData, attenuation, scattered))
                                 {
-                                    return attenuation * colorRef(scattered, bvhRoot, depth + 1, colorRef);
+                                    return emitted + attenuation * colorRef(scattered, bvhRoot, depth + 1, colorRef);
                                 }
                                 else
                                 {
-                                    return math::Vector3f(0.f, 0.f, 0.f);
+                                    return emitted;
                                 }
                             }
                             else
                             {
-                                float t  = 0.5f * (r.direction().y + 1.f);
-                                colorVec = (1.f - t) * Vector3f(1.f, 1.f, 1.f) + t * Vector3f(.3f, .5f, 1.f);
+                                //                                float t  = 0.5f * (r.direction().y + 1.f);
+                                //                                colorVec = (1.f - t) * Vector3f(1.f, 1.f, 1.f) + t *
+                                //                                Vector3f(.3f, .5f, 1.f);
+                                colorVec = Vector3f(0.f, 0.f, 0.f);
                             }
 
                             return colorVec;

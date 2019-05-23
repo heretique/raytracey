@@ -11,6 +11,13 @@ public:
     virtual ~Material() {}
     virtual bool scatter(const hq::math::Rayf& rayIn, const HitData& hitData, hq::math::Vector3f& attenuation,
                          hq::math::Rayf& scattered) const = 0;
+    virtual hq::math::Vector3f emitted(float u, float v, const hq::math::Vector3f& p)
+    {
+        (void)u;
+        (void)v;
+        (void)p;
+        return hq::math::Vector3f();
+    }
 };
 
 class Lambertian : public Material
@@ -27,7 +34,7 @@ public:
         using namespace hq::math;
         Vector3f target = hitData.p + hitData.normal + RandomInUnitSphere();
         scattered       = Rayf(hitData.p, target - hitData.p, rayIn.time());
-        attenuation     = albedo->value(0.f, 0.f, hitData.p);
+        attenuation     = albedo->value(hitData.uv.u, hitData.uv.v, hitData.p);
         return true;
     }
 
@@ -120,4 +127,31 @@ public:
     }
 
     float refIdx;
+};
+
+class DiffuseLight : public Material
+{
+public:
+    DiffuseLight(TexturePtr albedo)
+        : emitter(albedo)
+    {
+    }
+
+    // Material interface
+    bool scatter(const hq::math::Rayf& rayIn, const HitData& hitData, hq::math::Vector3f& attenuation,
+                 hq::math::Rayf& scattered) const override
+    {
+        (void)rayIn;
+        (void)hitData;
+        (void)attenuation;
+        (void)scattered;
+        return false;
+    }
+
+    hq::math::Vector3f emitted(float u, float v, const hq::math::Vector3f& p) override
+    {
+        return emitter->value(u, v, p);
+    }
+
+    TexturePtr emitter;
 };

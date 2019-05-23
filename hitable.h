@@ -11,6 +11,7 @@ struct HitData
     hq::math::Vector3f p;
     hq::math::Vector3f normal;
     Material*          materialPtr;
+    hq::math::Vector2f uv;
 };
 
 class Hitable

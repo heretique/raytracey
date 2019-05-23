@@ -3,6 +3,8 @@
 #include <Hq/Math/Vector.h>
 #include <memory>
 #include "FastNoise/FastNoise.h"
+#include <Hq/Math/Utils.h>
+#include <assert.h>
 
 class Texture
 {
@@ -53,20 +55,6 @@ public:
     TexturePtr oddTexture;
 };
 
-class Perlin
-{
-public:
-    float noise(const hq::math::Vector3f& p) const
-    {
-        float u = p.x - std::floorf(p.x);
-        float v = p.y - std::floorf(p.y);
-        float w = p.z - std::floorf(p.z);
-        int   i = int(4.f * p.x) & 255;
-        int   j = int(4.f * p.y) & 255;
-        int   k = int(4.f * p.z) & 255;
-    }
-};
-
 class NoiseTexture : public Texture
 {
 public:
@@ -77,9 +65,43 @@ public:
     }
     hq::math::Vector3f value(float u, float v, const hq::math::Vector3f& p) const override
     {
+        (void)u;
+        (void)v;
         using hq::math::Vector3f;
         return Vector3f(1.f, 1.f, 1.f) * ((noise.GetNoise(p.x, p.y, p.z) + 1.f) / 2.f);
     }
 
     FastNoise noise;
+};
+
+class ImageTexture : public Texture
+{
+public:
+    ImageTexture() = delete;
+    // data is always 4 channels (RGBA)
+    ImageTexture(const unsigned char* data, int width, int height)
+        : data(data)
+        , width(width)
+        , height(height)
+    {
+    }
+
+    hq::math::Vector3f value(float u, float v, const hq::math::Vector3f& p) const override
+    {
+        (void)p;
+        assert(0 <= u <= 1);
+        assert(0 <= v <= 1);
+        using vec3 = hq::math::Vector3f;
+        using namespace hq::math;
+        int   i = clamp(int(u * width), 0, width - 1);
+        int   j = clamp(int((1.f - v) * height), 0, height);
+        float r = int(data[4 * (i + width * j)]) / 255.f;
+        float g = int(data[4 * (i + width * j) + 1]) / 255.f;
+        float b = int(data[4 * (i + width * j) + 2]) / 255.f;
+        return vec3(r, g, b);
+    }
+
+    const unsigned char* data;
+    int                  width;
+    int                  height;
 };

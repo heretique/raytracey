@@ -5,6 +5,14 @@
 #include <Hq/Math/Utils.h>
 #include <Hq/Utils.h>
 
+void GetSphereUV(const hq::math::Vector3f& p, float& u, float& v)
+{
+    float phi   = atan2(p.z, p.x);
+    float theta = asin(p.y);
+    u           = 1.0f - (phi + M_PI) / (2 * M_PI);
+    v           = (theta + M_PI / 2) / M_PI;
+}
+
 class Sphere : public Hitable
 {
 public:
@@ -35,6 +43,7 @@ public:
                 hitData.t      = temp;
                 hitData.p      = r.pointOnRay(temp);
                 hitData.normal = (hitData.p - getCenter(r.time())) / radius;
+                GetSphereUV(hitData.normal, hitData.uv.u, hitData.uv.v);
                 return true;
             }
             temp = (-b + sqrt(b * b - a * c)) / a;
@@ -43,6 +52,7 @@ public:
                 hitData.t      = temp;
                 hitData.p      = r.pointOnRay(temp);
                 hitData.normal = (hitData.p - getCenter(r.time())) / radius;
+                GetSphereUV(hitData.normal, hitData.uv.u, hitData.uv.v);
                 return true;
             }
         }
