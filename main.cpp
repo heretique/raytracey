@@ -20,7 +20,7 @@
 
 const int SCREEN_WIDTH  = 800;
 const int SCREEN_HEIGHT = 600;
-const int SAMPLES       = 50;
+const int SAMPLES       = 100;
 const int MAX_DEPTH     = 20;
 
 using namespace hq;

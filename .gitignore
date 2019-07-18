@@ -3,3 +3,5 @@
 CMakeSettings.json
 build/
 .vscode/
+*.9-pre1
+*.8-pre1

@@ -94,7 +94,7 @@ public:
         using vec3 = hq::math::Vector3f;
         using namespace hq::math;
         int   i = clamp(int(u * width), 0, width - 1);
-        int   j = clamp(int((1.f - v) * height), 0, height);
+        int   j = clamp(int((1.f - v) * height), 0, height - 1);
         float r = int(data[4 * (i + width * j)]) / 255.f;
         float g = int(data[4 * (i + width * j) + 1]) / 255.f;
         float b = int(data[4 * (i + width * j) + 2]) / 255.f;
