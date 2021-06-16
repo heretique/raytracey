@@ -20,7 +20,7 @@
 
 const int SCREEN_WIDTH  = 800;
 const int SCREEN_HEIGHT = 600;
-const int SAMPLES       = 100;
+const int SAMPLES       = 500;
 const int MAX_DEPTH     = 20;
 
 using namespace hq;
@@ -178,7 +178,7 @@ std::vector<StbImage> createTexturedScene(HitableList& world)
     std::vector<StbImage> resources;
 
     StbImage moon;
-    if (moon.load("moonmap2k.jpg"))
+    if (moon.load("assets/2k_moon.jpg"))
     {
         resources.emplace_back(moon);
         std::shared_ptr<NoiseTexture> noiseTexture = std::make_shared<NoiseTexture>(FastNoise::SimplexFractal);
@@ -191,7 +191,7 @@ std::vector<StbImage> createTexturedScene(HitableList& world)
             std::make_unique<Lambertian>(std::make_shared<ImageTexture>(moon.data(), moon.width(), moon.height()))));
         world.list.push_back(
             new Sphere(Vector3f(1.f, 1.f, 2.f), 0.5f,
-                       std::make_unique<DiffuseLight>(std::make_shared<ColorTexture>(Vector3f(2.f, 2.f, 2.f)))));
+                       std::make_unique<DiffuseLight>(std::make_shared<ColorTexture>(Vector3f(1.f, 1.f, 1.f)))));
     }
 
     return resources;
